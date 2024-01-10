@@ -1,0 +1,54 @@
+/* styles.css */
+
+.centered-container {
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.long-input {
+    width: 300px; /* Or use a percentage width, like width: 50%; */
+}
+
+.regularTitle {
+    font-family: 'Arial', sans-serif;
+    font-size: 40px;
+    font-weight: bold;
+    text-align: center;
+    display: inline-block;
+    color: #000;
+}
+
+.roundedShapeTitle {
+    font-family: 'Arial', sans-serif;
+    font-size: 40px;
+    font-weight: bold;
+    text-align: center;
+    display: inline-block;
+    background: #ff0000; /* Red background for "tube" */
+    padding: 10px 10px; /* Adjust padding as needed */
+    border-radius: 25px; /* Create a rounded shape for "tube" */
+    color: #fff; /* White color for "tube" text */
+}
+
+.input-container {
+    width: 60%; /* Adjust the width as needed */
+    margin: 0 auto; /* Center the input container horizontally */
+    display: flex;
+    align-items: center;
+}
+
+input {
+    flex: 1;
+    padding: 10px;
+}
+
+button {
+    padding: 10px 20px;
+}
+
+.video-container {
+    width: 60%; /* Match the width of the input container */
+    margin: 20px auto; /* Add spacing between input and video container */
+}
