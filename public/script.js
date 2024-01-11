@@ -4,12 +4,14 @@ var player = null;
 var flag = false;
 var lastTime = -1;
 var interval = 1000;
+var playing = false;
 
-  // Function called when the YouTube API is ready
+// Function called when the YouTube API is ready
 function onYouTubeIframeAPIReady() {
     newPlayer('M7lc1UVf-VE');
 }
 
+// recieves the link of the video playing and displays it for the client
 socket.on("link", (arg) => {
     if(document.getElementById("videoUrl").value != arg) {
         document.getElementById("videoUrl").value = arg;
@@ -19,10 +21,20 @@ socket.on("link", (arg) => {
 })
 
 socket.on("updateTime", (time) => {
-    //playVideo(time);
-    
+    playVideo(time);
 })
 
+socket.on("isPlaying?", (arg) => {
+    playing = arg;
+})
+
+socket.on("play", (arg)=> {
+    player.playVideo();
+})
+
+socket.on("pause", (arg)=> {
+    player.pauseVideo();
+})
 
 function newPlayer(vid) {
     flag=false;
@@ -35,7 +47,8 @@ function newPlayer(vid) {
     player = new YT.Player('videoContainer', {
         videoId: vid,
         playerVars: {
-        'playsinline': 1
+        'playsinline': 1,
+        'origin': 'http://localhost:3000' 
         },
         events: {
         'onReady': onPlayerReady,
@@ -46,11 +59,8 @@ function newPlayer(vid) {
 
 function onPlayerReady(event) {
     event.target.playVideo();
-    flag=true;
-    /// Time tracking starting here
 
-    
-
+    /// Time tracking starting here  
     var checkPlayerTime = function () {
         if (lastTime != -1) {
             if(player.getPlayerState() == YT.PlayerState.PLAYING ) {
@@ -108,7 +118,7 @@ function playVideo(playtime=0) {
     const videoContainer = document.getElementById("videoContainer");
     // Extract the video ID from the URL
     const videoId = getVideoId(videoUrl);
-    if (videoId) {/*
+    if (videoId) {
         // Embed the YouTube video using the iframe API
         const iframe = document.getElementById("videoContainer");
         //iframe.width = "700";
@@ -120,7 +130,7 @@ function playVideo(playtime=0) {
         iframe.addEventListener('click', function(event) {
             socket.emit("LOG", "test");
         });
-       */
+       
         
         socket.emit("LOG", videoId);
     } else {

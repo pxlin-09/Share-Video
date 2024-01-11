@@ -20,6 +20,7 @@ var playing = false;
 io.on("connection", (socket) => {
     io.emit("link", link)
     io.emit("updateTime", time);
+    io.emit("isPlaying?", playing);
     socket.on("video", (msg)=>{
         link=msg;
         io.emit("link", link);
@@ -34,12 +35,12 @@ io.on("connection", (socket) => {
 
     socket.on("play", (arg) =>{
         playing = true;
-        //io.emit("play", arg);
+        io.emit("play", arg);
     })
 
     socket.on("pause", (arg) => {
         playing = false;
-        //io.emit("pause", arg)
+        io.emit("pause", arg)
     })
 })
 
