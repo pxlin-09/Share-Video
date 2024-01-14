@@ -4,21 +4,20 @@ var player = null;
 var flag = false;
 var lastTime = -1;
 var interval = 1000;
-var playing = false;
+var playing = null;
 var vid = null;
 var currentTime = 0;
-var apiReady = false;
+var playerRdy = false;
 
 // Function called when the YouTube API is ready
 function onYouTubeIframeAPIReady() {
     console.log("api ready");
     console.log("socketid: "+ socket.id);
     createNewPlayer()
-    apiReady=true;
 }
 
 function createNewPlayer() {
-    if (currentTime == -1 || !vid) {
+    if (currentTime == -1 || !vid || playing == null) {
         setTimeout(createNewPlayer, interval/2);
     } else {
         newPlayer(vid, currentTime);
@@ -39,7 +38,7 @@ socket.on("link", (arg) => {
             document.getElementById("videoUrl").value = arg;
             //console.log(arg)
         }
-        if (apiReady) {
+        if (playerRdy) {
             newPlayer(vid, currentTime);
         }
     }
@@ -51,7 +50,7 @@ socket.on("updateTime", (time, id) => {
         console.log("in updatetime: ", time);
         currentTime = time;
         lastTime = -1;
-        if (apiReady) {
+        if (playerRdy) {
             player.seekTo(time, true);
             currentTime = time;
             lastTime = -1;
@@ -68,7 +67,7 @@ socket.on("isPlaying?", (arg) => {
 socket.on("play", (arg)=> {
     if (!playing){ 
         playing=true;
-        if (apiReady) player.playVideo();
+        if (playerRdy) player.playVideo();
     }
 })
 
@@ -76,7 +75,7 @@ socket.on("play", (arg)=> {
 socket.on("pause", (arg)=> {
     if (playing){
         playing=false;
-        if (apiReady) player.pauseVideo();
+        if (playerRdy) player.pauseVideo();
     }
 })
 
@@ -145,7 +144,7 @@ function onPlayerReady(event) {
     } else {
         event.target.pauseVideo();
     }
-
+    playerRdy = true;
     /// Time tracking starting here  
     var checkPlayerTime = function () {
         if (lastTime != -1) {
@@ -155,7 +154,8 @@ function onPlayerReady(event) {
                 console.log("dif: "+Math.abs(t - lastTime -1));
 
                 ///expecting 1 second interval , with 500 ms margin
-                if (Math.abs(t - lastTime -1) > 0.5) {
+                //if (Math.abs(t - lastTime -1) > 0.5) {
+                if (Math.abs(t - lastTime -1) > 1) { // use a 1 second margin for now
                     // there was a seek occuring
                     console.log("seek");
                     socket.emit("seek", player.getCurrentTime(), socket.id);

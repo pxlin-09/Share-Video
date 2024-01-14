@@ -19,9 +19,9 @@ var playing = false;
 var socketID = 0;
 io.on("connection", (socket) => {
     console.log("current link "+link);
-    io.emit("link", link)
-    io.emit("updateTime", time, null);
-    io.emit("isPlaying?", playing);
+    socket.emit("link", link)
+    socket.emit("updateTime", time, null);
+    socket.emit("isPlaying?", playing);
     socket.on("video", (msg)=>{
         link=msg;
         io.emit("link", link);
