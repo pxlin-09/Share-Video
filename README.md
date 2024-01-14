@@ -18,7 +18,7 @@ Long description:
   * Create multiple instances of this page on your browser
   * Make modifications on one instance, all the other instances will automatically change to follow your modifications!
   * Current supported synchronized modifications are: video (changing link and hit play), video time, play, and pause
-<img width=500 src="https://github.com/pxlin-09/Share-Video/blob/main/screenshots/screenshot1.png"/>
+<img width=500 src="https://github.com/pxlin-09/Share-Video/blob/main/screenshots/screenshot.png"/>
 
   
 ## TODO:
