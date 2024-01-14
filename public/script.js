@@ -53,6 +53,8 @@ socket.on("updateTime", (time, id) => {
         lastTime = -1;
         if (apiReady) {
             player.seekTo(time, true);
+            currentTime = time;
+            lastTime = -1;
         }
     }
 })

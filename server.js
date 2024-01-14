@@ -13,7 +13,7 @@ app.get('/', (req, res) => {
     res.sendFile(__dirname + '/public/index.html'); // Replace with your HTML file path
 });
 
-var link = "https://www.youtube.com/watch?v=vjXNvLDkDTA"
+var link = "https://www.youtube.com/watch?v=ZKEqqIO7n-k"
 var time = 0;
 var playing = false;
 var socketID = 0;
