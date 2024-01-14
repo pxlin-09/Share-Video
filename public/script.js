@@ -5,38 +5,117 @@ var flag = false;
 var lastTime = -1;
 var interval = 1000;
 var playing = false;
+var vid = null;
+var currentTime = 0;
+var apiReady = false;
 
 // Function called when the YouTube API is ready
 function onYouTubeIframeAPIReady() {
-    newPlayer('M7lc1UVf-VE');
+    console.log("api ready");
+    console.log("socketid: "+ socket.id);
+    createNewPlayer()
+    apiReady=true;
 }
+
+function createNewPlayer() {
+    if (currentTime == -1 || !vid) {
+        setTimeout(createNewPlayer, interval/2);
+    } else {
+        newPlayer(vid, currentTime);
+    }
+}
+
+socket.on('connect', () => {
+    console.log(socket.id);
+    //startVoiceChat();
+});
 
 // recieves the link of the video playing and displays it for the client
 socket.on("link", (arg) => {
-    if(document.getElementById("videoUrl").value != arg) {
-        document.getElementById("videoUrl").value = arg;
-        playVideo();
-        console.log(arg)
+    console.log("in link");
+    if (vid != getVideoId(arg)){
+        vid=getVideoId(arg);
+        if(document.getElementById("videoUrl").value != arg) {
+            document.getElementById("videoUrl").value = arg;
+            //console.log(arg)
+        }
+        if (apiReady) {
+            newPlayer(vid, currentTime);
+        }
     }
 })
 
-socket.on("updateTime", (time) => {
-    playVideo(time);
+// recieves the current time for the video being played and sets it for the client
+socket.on("updateTime", (time, id) => {
+    if (socket == null || id != socket.id) {
+        console.log("in updatetime: ", time);
+        currentTime = time;
+        lastTime = -1;
+        if (apiReady) {
+            player.seekTo(time, true);
+        }
+    }
 })
 
+// updates isPlaying?
 socket.on("isPlaying?", (arg) => {
     playing = arg;
 })
 
+// plays video
 socket.on("play", (arg)=> {
-    player.playVideo();
+    if (!playing){ 
+        playing=true;
+        if (apiReady) player.playVideo();
+    }
 })
 
+// pauses video
 socket.on("pause", (arg)=> {
-    player.pauseVideo();
+    if (playing){
+        playing=false;
+        if (apiReady) player.pauseVideo();
+    }
 })
 
-function newPlayer(vid) {
+function startVoiceChat() {
+    navigator.mediaDevices.getUserMedia({ audio: true })
+        .then(stream => {
+            console.log("Microphone access granted");
+            
+            // Initialize MediaRecorder without specifying MIME type
+            const mediaRecorder = new MediaRecorder(stream);
+
+            mediaRecorder.ondataavailable = (e) => {
+                if (e.data.size > 0) {
+                    console.log("Sending audio data");
+                    socket.emit('voice', e.data);
+                }
+            };
+
+            mediaRecorder.onerror = (error) => {
+                console.error("MediaRecorder error:", error);
+            };
+
+            mediaRecorder.start(1000); // Trigger data event every 1000ms
+
+            // Use the default MIME type for playback as well
+            socket.on('voice', (data) => {
+                console.log("Receiving audio data");
+                const audioBlob = new Blob([data]);
+                const audioURL = window.URL.createObjectURL(audioBlob);
+                const audioElement = new Audio(audioURL);
+                audioElement.play().catch(e => console.error("Error playing audio:", e));
+            });
+        })
+        .catch(err => {
+            console.error('Error accessing audio stream', err);
+        });
+}
+
+// creates a new youtube player
+function newPlayer(vid, playtime) {
+    //console.log(playtime);
     flag=false;
     document.getElementById('videoContainer').remove();
     var div = document.createElement('div');
@@ -48,7 +127,8 @@ function newPlayer(vid) {
         videoId: vid,
         playerVars: {
         'playsinline': 1,
-        'origin': 'http://localhost:3000' 
+        'origin': 'http://localhost:3000',
+        'start' : playtime.toFixed(), // only recognizes playtime by adding toFixed
         },
         events: {
         'onReady': onPlayerReady,
@@ -58,7 +138,11 @@ function newPlayer(vid) {
 }
 
 function onPlayerReady(event) {
-    event.target.playVideo();
+    if (playing) {
+        event.target.playVideo();
+    } else {
+        event.target.pauseVideo();
+    }
 
     /// Time tracking starting here  
     var checkPlayerTime = function () {
@@ -66,17 +150,17 @@ function onPlayerReady(event) {
             if(player.getPlayerState() == YT.PlayerState.PLAYING ) {
                 var t = player.getCurrentTime();
                 
-                //console.log(Math.abs(t - lastTime -1));
+                console.log("dif: "+Math.abs(t - lastTime -1));
 
                 ///expecting 1 second interval , with 500 ms margin
-                if (Math.abs(t - lastTime - 1) > 0.5) {
+                if (Math.abs(t - lastTime -1) > 0.5) {
                     // there was a seek occuring
-                    console.log("seek"); /// fire your event here !
-                    socket.emit("seek", player.getCurrentTime());
+                    console.log("seek");
+                    socket.emit("seek", player.getCurrentTime(), socket.id);
                 }
             }
         }
-        lastTime = player.getCurrentTime();
+        if(player.getPlayerState() == YT.PlayerState.PLAYING) lastTime = player.getCurrentTime();
         setTimeout(checkPlayerTime, interval); /// repeat function call in 1 second
     }
     setTimeout(checkPlayerTime, interval); /// initial call delayed 
@@ -84,15 +168,19 @@ function onPlayerReady(event) {
 
   // Function called when the player state changes
 function onPlayerStateChange(event) {
-    console.log(event.data);
+   //console.log(event.data);
     if (event.data == YT.PlayerState.PLAYING) {
         socket.emit("LOG", "begin");
         socket.emit("LOG", player.getPlayerState());
         socket.emit("play", null);
+        console.log("play");
+        playing = true;
     } else if (event.data == YT.PlayerState.PAUSED) {
         socket.emit("LOG", "pause");
         socket.emit("pause", null);
         socket.emit("LOG", player.getPlayerState());
+        console.log("pause");
+        playing=false;
     } else if (event.data == YT.PlayerState.ENDED) {
         socket.emit("LOG", "end");
     }
@@ -131,7 +219,8 @@ function playVideo(playtime=0) {
             socket.emit("LOG", "test");
         });
        
-        
+        //newPlayer(videoId);
+        //player.start(playtime);
         socket.emit("LOG", videoId);
     } else {
         alert("Invalid YouTube video URL. Please provide a valid link.");

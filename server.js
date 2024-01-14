@@ -16,10 +16,11 @@ app.get('/', (req, res) => {
 var link = "https://www.youtube.com/watch?v=vjXNvLDkDTA"
 var time = 0;
 var playing = false;
-
+var socketID = 0;
 io.on("connection", (socket) => {
+    console.log("current link "+link);
     io.emit("link", link)
-    io.emit("updateTime", time);
+    io.emit("updateTime", time, null);
     io.emit("isPlaying?", playing);
     socket.on("video", (msg)=>{
         link=msg;
@@ -28,9 +29,9 @@ io.on("connection", (socket) => {
     socket.on("LOG", (msg) => {
         console.log(msg);
     })
-    socket.on("seek", (sec) => {
+    socket.on("seek", (sec, id) => {
         time = sec;
-        //io.emit("updateTime", time);
+        socket.broadcast.emit("updateTime", time, id);
     })
 
     socket.on("play", (arg) =>{
@@ -42,6 +43,12 @@ io.on("connection", (socket) => {
         playing = false;
         io.emit("pause", arg)
     })
+
+    socket.on('voice', (data) => {
+        //socket.broadcast.emit('voice', data);
+        //io.emit('voice', data);
+    });
+
 })
 
 server.listen(port, () => {
